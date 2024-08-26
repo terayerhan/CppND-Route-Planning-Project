@@ -66,12 +66,8 @@ RouteModel::Node *RoutePlanner::NextNode() {
     });
 
     RouteModel::Node *lowest_cost_node_ptr; // Create a pointer to a Node to store the lowest cost node pointer.
-
-    // Check if the open list not empty and remove the pointer to the Node with the lower sum of g and h values.
-    if (!open_list.empty()) {
-        lowest_cost_node_ptr = open_list.back(); // Get the last node pointer from the vector.
-        open_list.pop_back(); // Remove the last Node pointer from the open list.
-    }
+    lowest_cost_node_ptr = open_list.back(); // Get the last node pointer from the vector.
+    open_list.pop_back(); // Remove the last Node pointer from the open list.
     
     return lowest_cost_node_ptr;
 
