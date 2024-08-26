@@ -120,4 +120,31 @@ void RoutePlanner::AStarSearch() {
 
     // TODO: Implement your solution here.
 
+    //Initialize the current_node coordinates, g, and h values.
+    current_node = start_node; // Set the coordinates to those of the start_node.
+    current_node->g_value = 0; // Set the g_value to 0 since it is the start_node.
+    current_node->h_value = CalculateHValue(current_node); 
+
+    // Add the current node to the open list.
+    open_list.push_back(current_node);
+
+    // Loop while the open_list is not empty.
+    while (!open_list.empty()) { 
+        current_node = NextNode(); // get the least costly f_value node.
+        std::cout<< "Current node x = "<< current_node->x<<"  y = "<< current_node->y<<std::endl;
+
+        // Check if the curent_node is the goal_node.
+        if ((current_node->x == end_node->x) && (current_node->y == end_node->y)) {
+            std::cout<<"goal reached"<<std::endl;
+            // Construct the final path and store it in m_Model's path attribute.
+            m_Model.path = ConstructFinalPath(current_node);
+            std::cout<<"Path Saved"<<std::endl;
+            return;
+        }
+        
+        // Add current_node's valid neighbors to the open_list.
+        AddNeighbors(current_node);
+    }  
+
+
 }
