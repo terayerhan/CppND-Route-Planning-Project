@@ -41,17 +41,13 @@ void RoutePlanner::AddNeighbors(RouteModel::Node *current_node) {
 
     // Loop through all the current_node's neighbors and update them
     for(auto neighbor_ptr : current_node->neighbors) {
-        if(!(neighbor_ptr->visited)) {
-            neighbor_ptr->parent = current_node;
-            neighbor_ptr->h_value = CalculateHValue(neighbor_ptr);
+        neighbor_ptr->parent = current_node;
+        neighbor_ptr->h_value = CalculateHValue(neighbor_ptr);
 
-            // g_value of neighbor = g_value of current node + distance from current node to neighbor node.
-            neighbor_ptr->g_value = current_node->g_value + current_node->distance(*neighbor_ptr);
-            neighbor_ptr->visited = true; // mark the node as visited. 
-            open_list.push_back(neighbor_ptr); // Add the neighbor to the open list. 
-
-        }
-               
+        // g_value of neighbor = g_value of current node + distance from current node to neighbor node.
+        neighbor_ptr->g_value = current_node->g_value + current_node->distance(*neighbor_ptr);
+        neighbor_ptr->visited = true; // mark the node as visited. 
+        open_list.push_back(neighbor_ptr); // Add the neighbor to the open list.                
     }
 
 }
