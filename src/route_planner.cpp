@@ -1,5 +1,6 @@
 #include "route_planner.h"
 #include <algorithm>
+#include <unordered_set>
 
 RoutePlanner::RoutePlanner(RouteModel &model, float start_x, float start_y, float end_x, float end_y): m_Model(model) {
     // Convert inputs to percentage:
@@ -10,8 +11,8 @@ RoutePlanner::RoutePlanner(RouteModel &model, float start_x, float start_y, floa
 
     // TODO 2: Use the m_Model.FindClosestNode method to find the closest nodes to the starting and ending coordinates.
     // Store the nodes you find in the RoutePlanner's start_node and end_node attributes.
-    start_node = &model.FindClosestNode(start_x, start_y);
-    end_node = &model.FindClosestNode(end_x, end_y);
+    start_node = &(m_Model.FindClosestNode(start_x, start_y));
+    end_node = &m_Model.FindClosestNode(end_x, end_y);
 
 }
 
@@ -40,13 +41,17 @@ void RoutePlanner::AddNeighbors(RouteModel::Node *current_node) {
 
     // Loop through all the current_node's neighbors and update them
     for(auto neighbor_ptr : current_node->neighbors) {
-        neighbor_ptr->parent = current_node;
-        neighbor_ptr->h_value = CalculateHValue(neighbor_ptr);
+        if(!(neighbor_ptr->visited)) {
+            neighbor_ptr->parent = current_node;
+            neighbor_ptr->h_value = CalculateHValue(neighbor_ptr);
 
-        // g_value of neighbor = g_value of current node + distance from current node to neighbor node.
-        neighbor_ptr->g_value = current_node->g_value + current_node->distance(*neighbor_ptr); 
-        open_list.push_back(neighbor_ptr); // Add the neighbor to the open list.
-        neighbor_ptr->visited = true; // mark the node as visited.
+            // g_value of neighbor = g_value of current node + distance from current node to neighbor node.
+            neighbor_ptr->g_value = current_node->g_value + current_node->distance(*neighbor_ptr);
+            neighbor_ptr->visited = true; // mark the node as visited. 
+            open_list.push_back(neighbor_ptr); // Add the neighbor to the open list. 
+
+        }
+               
     }
 
 }
@@ -82,30 +87,63 @@ RouteModel::Node *RoutePlanner::NextNode() {
 // - The returned vector should be in the correct order: the start node should be the first element
 //   of the vector, the end node should be the last element.
 
+// std::vector<RouteModel::Node> RoutePlanner::ConstructFinalPath(RouteModel::Node *current_node) {
+//     // Create path_found vector
+//     distance = 0.0f;
+//     std::vector<RouteModel::Node> path_found;
+
+//     // TODO: Implement your solution here.
+//     path_found.push_back(*current_node); // Push the current node onto the path_found vector.
+//     RouteModel::Node *parent_node_ptr = current_node->parent; // Get the pointer to the current_node's parent.
+
+//     // Check if the parent_node_ptr is not a null pointer since only the start_node will have a null pointer parent.
+//     while(parent_node_ptr) {
+//         path_found.push_back(*parent_node_ptr); // push the parent node of the current node onto the path_found vector.
+//         distance += current_node->distance(*parent_node_ptr); // Add the distance from the current_node to its parent node.
+//         current_node = parent_node_ptr; // Make the parent_node_ptr the new current_node pointer.
+//         parent_node_ptr = current_node->parent; // Make the parent_node_ptr point to the parent of the new current_node.
+//     }
+
+//     // Reverse the order of nodes in the path_found vector so that the path start from the start_node to the current_node.
+//     std::reverse(path_found.begin(), path_found.end());
+
+//     distance *= m_Model.MetricScale(); // Multiply the distance by the scale of the map to get meters.
+//     return path_found;
+
+// }
 std::vector<RouteModel::Node> RoutePlanner::ConstructFinalPath(RouteModel::Node *current_node) {
     // Create path_found vector
     distance = 0.0f;
     std::vector<RouteModel::Node> path_found;
+    std::unordered_set<RouteModel::Node*> visited_nodes;  // Track visited nodes to detect cycles
 
-    // TODO: Implement your solution here.
-    path_found.push_back(*current_node); // Push the current node onto the path_found vector.
-    RouteModel::Node *parent_node_ptr = current_node->parent; // Get the pointer to the current_node's parent.
+    while(current_node) {
+        // Cycle detection
+        if (visited_nodes.find(current_node) != visited_nodes.end()) {
+            std::cerr << "Cycle detected! Node already visited: (" << current_node->x << ", " << current_node->y << ")" << std::endl;
+            break;
+        }
 
-    // Check if the parent_node_ptr is not a null pointer since only the start_node will have a null pointer parent.
-    while(parent_node_ptr) {
-        path_found.push_back(*parent_node_ptr); // push the parent node of the current node onto the path_found vector.
-        distance += current_node->distance(*parent_node_ptr); // Add the distance from the current_node to its parent node.
-        current_node = parent_node_ptr; // Make the parent_node_ptr the new current_node pointer.
-        parent_node_ptr = current_node->parent; // Make the parent_node_ptr point to the parent of the new current_node.
+        visited_nodes.insert(current_node);  // Mark this node as visited
+        path_found.push_back(*current_node); // Add the current node to the path
+        std::cout << "Adding node to path: (" << current_node->x << ", " << current_node->y << ")" << std::endl;
+
+        if (current_node->parent) {
+            distance += current_node->distance(*(current_node->parent)); // Accumulate distance
+        }
+
+        current_node = current_node->parent; // Move to the parent node
     }
 
-    // Reverse the order of nodes in the path_found vector so that the path start from the start_node to the current_node.
+    // Reverse to get the path from start to goal
     std::reverse(path_found.begin(), path_found.end());
 
-    distance *= m_Model.MetricScale(); // Multiply the distance by the scale of the map to get meters.
-    return path_found;
+    distance *= m_Model.MetricScale(); // Convert distance to meters
+    std::cout << "Path Constructed. Total distance: " << distance << " meters" << std::endl;
 
+    return path_found;
 }
+
 
 
 // TODO 7: Write the A* Search algorithm here.
@@ -122,7 +160,7 @@ void RoutePlanner::AStarSearch() {
 
     //Initialize the current_node coordinates, g, and h values.
     current_node = start_node; // Set the coordinates to those of the start_node.
-    current_node->g_value = 0; // Set the g_value to 0 since it is the start_node.
+    current_node->g_value = 0.0f; // Set the g_value to 0 since it is the start_node.
     current_node->h_value = CalculateHValue(current_node); 
 
     // Add the current node to the open list.
