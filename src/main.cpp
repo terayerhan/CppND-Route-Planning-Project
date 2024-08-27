@@ -59,12 +59,34 @@ int main(int argc, const char **argv)
     float start_x, start_y, end_x, end_y;
 
     // Prompt the user for input
-    std::cout << "Enter start and end coordinates in the form: start_x start_y end_x end_y "<<std::endl;
+    while (true) {
+        std::cout << "Enter start and end coordinates in the form: start_x start_y end_x end_y (values between 0 and 100): " << std::endl;
 
-    // Take inputs form the user
-    std::cin >> start_x >>start_y >> end_x >> end_y;
+        // Take inputs from the user
+        std::cin >> start_x >> start_y >> end_x >> end_y;
+
+        // Check if the input is valid (i.e., the user entered four floating-point numbers)
+        if (std::cin.fail()) {
+            std::cout << "Invalid input. Please enter four numeric values." << std::endl;
+            
+            // Clear the error state of the stream
+            std::cin.clear();
+            // Ignore the remaining input in the buffer
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        } else if ((start_x < 0 || start_x > 100) || 
+                   (start_y < 0 || start_y > 100) || 
+                   (end_x < 0 || end_x > 100) || 
+                   (end_y < 0 || end_y > 100)) {
+            std::cout << "Invalid input. Coordinates must be between 0 and 100." << std::endl;
+        } else {
+            // Input is valid, break out of the loop
+            break;
+        }
+    }
+
     // Display what was received
-    std::cout << "start_x = " << start_x << ", start_y = " << start_y << ", end_x = " << end_x << ", end_y = " << end_y <<std::endl;
+    std::cout << "start_x = " << start_x << ", start_y = " << start_y 
+              << ", end_x = " << end_x << ", end_y = " << end_y << std::endl;
 
     // Build Model.
     RouteModel model{osm_data};
